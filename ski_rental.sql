@@ -1,4 +1,4 @@
-﻿/* 
+/*
 База данных пункта проката горнолыжного оборудования (или любого спортивного) 
 */
 
@@ -43,7 +43,10 @@ CREATE TABLE employees (
 	firstname VARCHAR(100),                   -- Имя 
     patronymic VARCHAR(100),                  -- Отчество 	
     login VARCHAR(100),                       -- Логин
-	password_hash VARCHAR(255)                -- Пароль    
+	password_hash VARCHAR(255),               -- Пароль 
+    created_at DATETIME DEFAULT NOW(),        -- дата создания записи
+    updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP        -- дата обновления записи 
+    
 ) COMMENT 'Сотрудники';
 
 DROP TABLE IF EXISTS profiles_employees;
@@ -60,9 +63,10 @@ CREATE TABLE profiles_employees (
     position VARCHAR(100),                    -- должность сотрудника
     created_at DATETIME DEFAULT NOW(),        -- дата приема на работу 
     deleted_at DATETIME DEFAULT NULL,         -- дата увольнения 
+    updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP,        -- дата обновления записи 
         
-    FOREIGN KEY (profiles_employees_id) REFERENCES employees(id),
-	FOREIGN KEY (gender) REFERENCES categories_gender(id)
+    CONSTRAINT profiles_employees_id_fk FOREIGN KEY (profiles_employees_id) REFERENCES employees(id),
+	CONSTRAINT profiles_employees_gender_fk FOREIGN KEY (gender) REFERENCES categories_gender(id)
 ) COMMENT 'Профайлы сотрудников';
 
 DROP TABLE IF EXISTS clients;
@@ -70,7 +74,9 @@ CREATE TABLE clients (
 	id SERIAL PRIMARY KEY,                    -- id клиента
     lastname VARCHAR(100),                    -- Фамилия
 	firstname VARCHAR(100),                   -- Имя 
-    patronymic VARCHAR(100)                   -- Отчество 	
+    patronymic VARCHAR(100),                   -- Отчество 
+	created_at DATETIME DEFAULT NOW(),        -- дата создания записи
+    updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP        -- дата обновления записи 
 ) COMMENT 'Клиенты';
 
 DROP TABLE IF EXISTS profiles_clients;
@@ -84,9 +90,10 @@ CREATE TABLE profiles_clients (
     homestreet VARCHAR(100),                  -- улица прописки
     homehouse VARCHAR(100),                   -- дом прописки
     homeapartment VARCHAR(100),               -- квартира прописки
+    updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP,        -- дата обновления записи 
     
-    FOREIGN KEY (profiles_clients_id) REFERENCES clients(id),
-	FOREIGN KEY (gender) REFERENCES categories_gender(id)
+    CONSTRAINT profiles_clients_id_fk FOREIGN KEY (profiles_clients_id) REFERENCES clients(id),
+	CONSTRAINT profiles_clients_gender_fk FOREIGN KEY (gender) REFERENCES categories_gender(id)
 ) COMMENT 'Профайлы клиентов';
 
 
@@ -108,9 +115,12 @@ CREATE TABLE products (
     photo VARCHAR(255),                       -- относительный путь к файлу в файлохранилище  
     status_id SET('+', '-'),                  -- статус есть-"+" на руках"-"
     
-    FOREIGN KEY (sport_id) REFERENCES sport_categories(id),
-	FOREIGN KEY (gender_id) REFERENCES categories_gender(id),
-    FOREIGN KEY (age_id) REFERENCES categories_age(id)    
+    INDEX products_name_idx(`name`),
+    INDEX products_size_idx(size),
+    CONSTRAINT products_sport_id_fk FOREIGN KEY (sport_id) REFERENCES sport_categories(id),
+	CONSTRAINT products_gender_id_fk FOREIGN KEY (gender_id) REFERENCES categories_gender(id),
+    CONSTRAINT products_age_id_fk FOREIGN KEY (age_id) REFERENCES categories_age(id),
+    CONSTRAINT products_prof_id_fk FOREIGN KEY (prof_id) REFERENCES prof_categories(id) 
 ) COMMENT 'Товары';
 
 DROP TABLE IF EXISTS card_product;
@@ -120,7 +130,7 @@ CREATE TABLE card_product (
     return_date DATETIME DEFAULT NULL,        -- дата возврата 
     count_rental_day INT UNSIGNED,            -- количество дней проката  
     
-    FOREIGN KEY (card_product_id) REFERENCES products(id) 
+    CONSTRAINT card_product_id_fk FOREIGN KEY (card_product_id) REFERENCES products(id) 
 ) COMMENT 'карточка товара'; 
    
 -- ---------- ЗАКАЗ --------------------------------------------------------------------------------------
@@ -133,7 +143,10 @@ CREATE TABLE orders (
     client_id BIGINT UNSIGNED NOT NULL,
     identity_document VARCHAR(50),            -- документ удостоверяющий личность    
     pledge INT DEFAULT NULL,                  -- сумма залога 
-    deposit INT UNSIGNED NOT NULL             -- сумма депозита           
+    deposit INT UNSIGNED NOT NULL,             -- сумма депозита 
+    
+    
+    INDEX orders_client_idx(client_id)
 ) COMMENT 'Заказы';
 
 DROP TABLE IF EXISTS order_card;
@@ -141,8 +154,8 @@ CREATE TABLE order_card (
 	card_id SERIAL PRIMARY KEY, 
     product_id BIGINT UNSIGNED NOT NULL,        -- выбранное оборудование    
 	
-    FOREIGN KEY	(card_id) REFERENCES orders(id),
-    FOREIGN KEY	(product_id) REFERENCES products(id)        
+    CONSTRAINT order_cardid_fk FOREIGN KEY	(card_id) REFERENCES orders(id),
+    CONSTRAINT order_card_product_id_fk FOREIGN KEY	(product_id) REFERENCES products(id)        
 ) COMMENT 'Карточка заказа, что выбрал клиент';
 
 
